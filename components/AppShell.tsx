@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {createContext,useContext,useEffect,useMemo,useRef,useState,type ReactNode} from "react";
+import {createContext,useContext,useEffect,useMemo,useRef,useState,useCallback,type ReactNode} from "react";
 import {languages,recordingModes,shortcuts,modes,themes} from "@/lib/constants";
 import type {Language,RecordingState,Settings,Shortcut} from "@/lib/types";
 
@@ -33,8 +33,8 @@ function Language({value,onChange}:{value:Language;onChange:(v:Language)=>void})
 export function Workspace(){
  const {settings,update}=useSettings();const [state,setState]=useState<RecordingState>("idle");const [seconds,setSeconds]=useState(0);const [text,setText]=useState("");const [editing,setEditing]=useState(false);const timer=useRef<ReturnType<typeof setInterval>|null>(null);
  useEffect(()=>{if(state==="recording"){timer.current=setInterval(()=>setSeconds(s=>s+1),1000)}else if(timer.current){clearInterval(timer.current);timer.current=null}return()=>{if(timer.current)clearInterval(timer.current)}},[state]);
- const toggle=()=>{if(state==="idle"||state==="error"){setSeconds(0);setState("recording")}else if(state==="recording"){setState("processing");window.setTimeout(()=>setState("success"),450)}};
- useEffect(()=>{const key=(e:KeyboardEvent)=>{const el=e.target as HTMLElement|null;if(el?.matches("input,textarea,[contenteditable=true]")||e.repeat)return;const s=settings.shortcut;const ok=s==="Space"?e.code==="Space":s.startsWith("Ctrl+")?e.ctrlKey&&e.code===s.slice(5):s.startsWith("Alt+")?e.altKey&&e.code===s.slice(4):e.key===s;if(ok){e.preventDefault();toggle()}};window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key)},[settings.shortcut,state]);
+ const toggle=useCallback(()=>{if(state==="idle"||state==="error"){setSeconds(0);setState("recording")}else if(state==="recording"){setState("processing");window.setTimeout(()=>setState("error"),450)}},[state]);
+ useEffect(()=>{const key=(e:KeyboardEvent)=>{const el=e.target as HTMLElement|null;if(el?.matches("input,textarea,[contenteditable=true]")||e.repeat)return;const s=settings.shortcut;const ok=s==="Space"?e.code==="Space":s.startsWith("Ctrl+")?e.ctrlKey&&e.code===s.slice(5):s.startsWith("Alt+")?e.altKey&&e.code===s.slice(4):e.key===s;if(ok){e.preventDefault();toggle()}};window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key)},[settings.shortcut,toggle]);
  const label=state==="idle"?"ЯРЬЖ ЭХЛЭХ":state==="recording"?"ЯРИЖ БАЙНА...":state==="processing"?"БОЛОВСРУУЛЖ БАЙНА...":state==="error"?"ДАХИН ОРОЛДОХ":"БИЧЛЭГ БЭЛЭН";
  const mm=String(Math.floor(seconds/60)).padStart(2,"0"),ss=String(seconds%60).padStart(2,"0");
  return <section className="workspace"><div className="heading"><div><small>VOICE WORKSPACE</small><h1>Ярихыг текст болго.</h1><p>Монгол, English, 日本語 хэлээр ярьж эхлээрэй.</p></div><Language value={settings.language} onChange={v=>update("language",v)}/></div>
@@ -48,7 +48,7 @@ export function SettingsPanel(){
  const {settings,update}=useSettings();
  const Toggle=({k,label}:{k:keyof Settings;label:string})=><label className="toggle"><span>{label}</span><input type="checkbox" checked={Boolean(settings[k])} onChange={e=>update(k,e.target.checked as never)}/></label>;
  return <div className="settings-grid">
- <section className="settings"><h2>Language</h2><p>Үндсэн хэл болон Auto Detect.</p><Toggle k="autoPunctuation" label="Auto detect is represented by language selector"/><div className="option-list"><label><input type="radio" checked={settings.language==="mn"} onChange={()=>update("language","mn")}/> 🇲🇳 Монгол</label><label><input type="radio" checked={settings.language==="auto"} onChange={()=>update("language","auto")}/> 🌐 Auto Detect</label></div></section>
+ <section className="settings"><h2>Language</h2><p>Үндсэн хэлээ сонгоно. Auto Detect нь speech integration үед ашиглагдана.</p><Language value={settings.language} onChange={v=>update("language",v)}/></section>
  <section className="settings"><h2>Recording</h2><p>Бичлэгийн үндсэн үйлдэл.</p>{recordingModes.map(x=><label className="radio" key={x.value}><input type="radio" name="mode" checked={settings.recordingMode===x.value} onChange={()=>update("recordingMode",x.value)}/><span><b>{x.label}</b><small>{x.description}</small></span></label>)}<Toggle k="autoStop" label="Auto stop"/></section>
  <section className="settings"><h2>Keyboard</h2><p>Зөвхөн VOICE app дотор үйлчилнэ.</p><select value={settings.shortcut} onChange={e=>update("shortcut",e.target.value as Shortcut)}>{shortcuts.map(x=><option key={x}>{x}</option>)}</select></section>
  <section className="settings"><h2>Text</h2><p>Ирээдүйн processor-ийн typed foundation.</p><Toggle k="autoPunctuation" label="Auto punctuation"/><Toggle k="autoCorrection" label="Auto correction"/><Toggle k="removeFillers" label="Remove fillers"/><div className="option-list">{modes.map(x=><label className="radio" key={x.value}><input type="radio" name="processing" checked={settings.processingMode===x.value} onChange={()=>update("processingMode",x.value)}/><span><b>{x.label}</b><small>{x.description}</small></span></label>)}</div></section>
