@@ -7,9 +7,11 @@ const compat=new FlatCompat({
   baseDirectory:path.dirname(fileURLToPath(import.meta.url))
 });
 
-export default [
+const config=[
   ...compat.config(nextVitals),
   {
     ignores:[".next/**","node_modules/**"]
   }
 ];
+
+export default config;
