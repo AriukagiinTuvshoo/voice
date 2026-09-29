@@ -1,0 +1,12 @@
+"use client";
+import {useCallback,useEffect,useRef,useState} from "react";import {VoiceSpeechService} from "@/lib/speech/service";import type {SpeechError,SpeechSessionState} from "@/lib/speech/types";import type {Language} from "@/lib/types";
+function id(){return typeof crypto!=="undefined"&&"randomUUID" in crypto?crypto.randomUUID():String(Date.now())}
+export function useSpeech(){
+ const service=useRef<VoiceSpeechService|null>(null);const [state,setState]=useState<SpeechSessionState>("idle");const [interimText,setInterimText]=useState("");const [finalText,setFinalText]=useState("");const [error,setError]=useState<SpeechError>();
+ const sessionId=useRef(id());const startedAt=useRef<number>();
+ useEffect(()=>{const s=new VoiceSpeechService();service.current=s;const clean=[s.onInterimTranscript(setInterimText),s.onFinalTranscript(t=>setFinalText(v=>(v+" "+t).replace(/\\s+/g," ").trim())),s.onError(e=>{setError(e);setState("error")}),s.onStateChange(next=>{if(next==="recording")setState("recording");if(next==="stopping")setState("stopping");if(next==="ended")setState("processing")})];return()=>{clean.forEach(fn=>fn());s.destroy();service.current=null}},[]);
+ const start=useCallback(async(language:Language)=>{setError(undefined);setInterimText("");setFinalText("");sessionId.current=id();startedAt.current=Date.now();setState("requesting_permission");try{await service.current?.start(language)}catch(e){const err=e&&typeof e==="object"&&"code" in e?e as SpeechError:{code:"unknown_error",message:"Speech recognition эхлүүлж чадсангүй.",cause:e};setError(err);setState("error")}},[]);
+ const stop=useCallback(async()=>{if(!service.current)return;setState("stopping");try{await service.current.stop();setState("processing");window.setTimeout(()=>setState(finalText.trim()?"success":"success"),0)}catch(e){const err=e&&typeof e==="object"&&"code" in e?e as SpeechError:{code:"unknown_error",message:"Speech recognition зогсоож чадсангүй.",cause:e};setError(err);setState("error")}},[finalText]);
+ const abort=useCallback(async()=>{await service.current?.abort();setInterimText("");setState("idle")},[]);
+ return {session:{id:sessionId.current,language:"mn" as Language,state,startedAt:startedAt.current,endedAt:state==="success"||state==="error"?Date.now():undefined,interimText,finalText,error},start,stop,abort,supported:service.current?.isSupported()??false,capabilities:service.current?.getCapabilities()};
+}
