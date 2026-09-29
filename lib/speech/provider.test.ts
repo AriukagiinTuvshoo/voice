@@ -1,0 +1,2 @@
+import {describe,expect,it} from "vitest";import {BrowserSpeechProvider} from "./browser-provider";
+describe("browser speech provider",()=>{it("reports required capabilities",()=>{const p=new BrowserSpeechProvider();expect(p.id).toBe("browser-web-speech");expect(p.capabilities.supportedLanguages).toEqual(["mn","en","ja"]);expect(p.capabilities.interimResults).toBe(true)});it("reports unsupported when SpeechRecognition is absent",()=>{expect(new BrowserSpeechProvider().isSupported()).toBe(false)})});
