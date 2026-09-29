@@ -14,6 +14,12 @@ function safeProviderError(message:string):SpeechError{
   return normalizeSpeechError({error:message});
 }
 
+function isSpeechTokenResponse(payload:unknown):payload is SpeechTokenResponse{
+  if(typeof payload!=="object"||payload===null)return false;
+  const candidate=payload as Record<string,unknown>;
+  return typeof candidate.token==="string"&&typeof candidate.region==="string";
+}
+
 export function normalizeCloudSpeechError(message:string):SpeechError{
   const value=message.toLowerCase();
   if(value.includes("not allowed")||value.includes("permission")||value.includes("denied")){
@@ -47,7 +53,7 @@ async function fetchSpeechToken():Promise<SpeechTokenResponse>{
     throw normalizeSpeechError({error:code});
   }
 
-  if(typeof payload!=="object"||payload===null||typeof payload.token!=="string"||typeof payload.region!=="string"){
+  if(!isSpeechTokenResponse(payload)){
     throw safeProviderError("provider-unavailable");
   }
 
