@@ -9,16 +9,18 @@ function id():string{
   return typeof crypto!=="undefined"&&"randomUUID" in crypto?crypto.randomUUID():String(Date.now());
 }
 
+function isSpeechError(error:unknown):error is SpeechError{
+  return typeof error==="object"&&error!==null&&"code" in error&&"message" in error;
+}
+
 function toSpeechError(error:unknown):SpeechError{
-  if(typeof error==="object"&&error!==null&&"code" in error){
-    return error as SpeechError;
-  }
-  return {code:"unknown_error",message:"Speech recognition эхлүүлж чадсангүй.",cause:error};
+  return isSpeechError(error)?error:{code:"unknown_error",message:"Speech recognition эхлүүлж чадсангүй.",cause:error};
 }
 
 export function useSpeech(){
   const service=useRef<VoiceSpeechService|null>(null);
   const [state,setState]=useState<SpeechSessionState>("idle");
+  const [language,setLanguage]=useState<Language>("mn");
   const [interimText,setInterimText]=useState("");
   const [finalText,setFinalText]=useState("");
   const [error,setError]=useState<SpeechError|undefined>(undefined);
@@ -47,7 +49,8 @@ export function useSpeech(){
     };
   },[]);
 
-  const start=useCallback(async(language:Language)=>{
+  const start=useCallback(async(selectedLanguage:Language)=>{
+    setLanguage(selectedLanguage);
     setError(undefined);
     setInterimText("");
     setFinalText("");
@@ -55,7 +58,7 @@ export function useSpeech(){
     startedAt.current=Date.now();
     setState("requesting_permission");
     try{
-      await service.current?.start(language);
+      await service.current?.start(selectedLanguage);
     }catch(cause){
       const speechError=toSpeechError(cause);
       setError(speechError);
@@ -82,5 +85,5 @@ export function useSpeech(){
     setState("idle");
   },[]);
 
-  return {session:{id:sessionId.current,language:"mn" as Language,state,startedAt:startedAt.current,endedAt:state==="success"||state==="error"?Date.now():undefined,interimText,finalText,error},start,stop,abort,supported,capabilities};
+  return {session:{id:sessionId.current,language,state,startedAt:startedAt.current,endedAt:state==="success"||state==="error"?Date.now():undefined,interimText,finalText,error},start,stop,abort,supported,capabilities};
 }
