@@ -1,0 +1,2 @@
+import {describe,expect,it} from "vitest";import {normalizeSpeechError} from "./errors";
+describe("speech error normalization",()=>{it("normalizes permission denial",()=>{expect(normalizeSpeechError({error:"not-allowed"}).code).toBe("permission_denied")});it("normalizes unsupported browser",()=>{expect(normalizeSpeechError({error:"unsupported"}).code).toBe("browser_unsupported")});it("normalizes network failure",()=>{expect(normalizeSpeechError({error:"network"}).code).toBe("network_error")})});
