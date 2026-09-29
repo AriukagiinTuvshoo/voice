@@ -5,8 +5,12 @@ export const dynamic="force-dynamic";
 
 const regionPattern=/^[a-z0-9-]+$/i;
 
-function json(body:unknown,status:number){
-  return Response.json(body,{status,headers:{"Cache-Control":"no-store"}});
+function json(body:unknown,status:number,extraHeaders?:Record<string,string>){
+  return Response.json(body,{status,headers:{"Cache-Control":"no-store",...extraHeaders}});
+}
+
+export async function GET(){
+  return json({error:"method_not_allowed"},405,{"Allow":"POST"});
 }
 
 export async function POST(request:Request){

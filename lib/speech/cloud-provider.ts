@@ -76,6 +76,7 @@ export class CloudSpeechProvider implements SpeechProvider{
   private refreshTimer:ReturnType<typeof setTimeout>|null=null;
   private intentionalStop=false;
   private sessionActive=false;
+  private sessionGeneration=0;
   private seenFinalIds=new Set<string>();
   private interimListeners=new Set<(text:string)=>void>();
   private finalListeners=new Set<(text:string)=>void>();
@@ -88,11 +89,16 @@ export class CloudSpeechProvider implements SpeechProvider{
 
   private emitState(state:SpeechProviderState){this.stateListeners.forEach(callback=>callback(state))}
 
+  private isCurrentSession(generation:number,recognizer:unknown):boolean{
+    return this.sessionGeneration===generation&&this.recognizer===recognizer;
+  }
+
   async start(options:SpeechStartOptions):Promise<void>{
     if(options.language==="auto")throw normalizeSpeechError({error:"language-not-supported"});
     if(!this.isSupported())throw normalizeSpeechError({error:"unsupported"});
     if(this.sessionActive)await this.abort();
 
+    const generation=++this.sessionGeneration;
     const language=toProviderLanguage(options.language);
     if(!language)throw normalizeSpeechError({error:"language-not-supported"});
 
@@ -102,8 +108,9 @@ export class CloudSpeechProvider implements SpeechProvider{
 
     try{
       const [{token,region},sdk]=await Promise.all([fetchSpeechToken(),import("microsoft-cognitiveservices-speech-sdk")]);
-      sdk.Recognizer.enableTelemetry(false);
+      if(generation!==this.sessionGeneration)return;
 
+      sdk.Recognizer.enableTelemetry(false);
       const speechConfig=sdk.SpeechConfig.fromAuthorizationToken(token,region);
       speechConfig.speechRecognitionLanguage=language;
       speechConfig.outputFormat=sdk.OutputFormat.Simple;
@@ -114,12 +121,16 @@ export class CloudSpeechProvider implements SpeechProvider{
       this.recognizer=recognizer;
       this.sessionActive=true;
 
-      recognizer.sessionStarted=()=>this.emitState("recording");
+      recognizer.sessionStarted=()=>{
+        if(this.isCurrentSession(generation,recognizer))this.emitState("recording");
+      };
       recognizer.recognizing=(_sender,event)=>{
+        if(!this.isCurrentSession(generation,recognizer))return;
         const text=event.result.text?.trim()??"";
         if(text)this.interimListeners.forEach(callback=>callback(text));
       };
       recognizer.recognized=(_sender,event)=>{
+        if(!this.isCurrentSession(generation,recognizer))return;
         if(event.result.reason!==sdk.ResultReason.RecognizedSpeech)return;
         const text=event.result.text?.trim()??"";
         const resultId=event.result.resultId;
@@ -128,13 +139,14 @@ export class CloudSpeechProvider implements SpeechProvider{
         this.finalListeners.forEach(callback=>callback(text));
       };
       recognizer.canceled=(_sender,event)=>{
-        if(this.intentionalStop)return;
+        if(!this.isCurrentSession(generation,recognizer)||this.intentionalStop)return;
         const message=event.errorDetails||String(event.reason);
         this.errorListeners.forEach(callback=>callback(normalizeCloudSpeechError(message)));
         this.emitState("error");
         void this.cleanup();
       };
       recognizer.sessionStopped=()=>{
+        if(!this.isCurrentSession(generation,recognizer))return;
         this.emitState("ended");
         void this.cleanup();
       };
@@ -143,8 +155,9 @@ export class CloudSpeechProvider implements SpeechProvider{
         recognizer.startContinuousRecognitionAsync(resolve,error=>reject(normalizeCloudSpeechError(String(error))));
       });
 
-      this.scheduleTokenRefresh();
+      if(this.isCurrentSession(generation,recognizer))this.scheduleTokenRefresh();
     }catch(error){
+      if(generation!==this.sessionGeneration)return;
       await this.cleanup();
       const speechError=error&&typeof error==="object"&&"code" in error?error as SpeechError:normalizeCloudSpeechError(error instanceof Error?error.message:String(error));
       this.errorListeners.forEach(callback=>callback(speechError));
@@ -154,10 +167,10 @@ export class CloudSpeechProvider implements SpeechProvider{
   }
 
   async stop():Promise<void>{
-    if(!this.recognizer){this.emitState("ended");return}
+    const recognizer=this.recognizer;
+    if(!recognizer){this.emitState("ended");return}
     this.intentionalStop=true;
     this.emitState("stopping");
-    const recognizer=this.recognizer;
     try{
       await new Promise<void>((resolve,reject)=>{
         recognizer.stopContinuousRecognitionAsync(resolve,error=>reject(normalizeCloudSpeechError(String(error))));
@@ -169,6 +182,7 @@ export class CloudSpeechProvider implements SpeechProvider{
 
   async abort():Promise<void>{
     this.intentionalStop=true;
+    this.sessionGeneration+=1;
     const recognizer=this.recognizer;
     if(!recognizer){await this.cleanup();this.emitState("ended");return}
     try{
@@ -187,12 +201,16 @@ export class CloudSpeechProvider implements SpeechProvider{
   }
 
   private async refreshAuthorizationToken(){
-    if(!this.sessionActive||!this.recognizer)return;
+    const generation=this.sessionGeneration;
+    const recognizer=this.recognizer;
+    if(!this.sessionActive||!recognizer)return;
     try{
       const {token}=await fetchSpeechToken();
-      if(this.recognizer)this.recognizer.authorizationToken=token;
+      if(!this.isCurrentSession(generation,recognizer))return;
+      recognizer.authorizationToken=token;
       this.scheduleTokenRefresh();
     }catch(error){
+      if(!this.isCurrentSession(generation,recognizer))return;
       const speechError=error&&typeof error==="object"&&"code" in error?error as SpeechError:normalizeCloudSpeechError(error instanceof Error?error.message:String(error));
       this.errorListeners.forEach(callback=>callback(speechError));
       this.emitState("error");
@@ -207,6 +225,7 @@ export class CloudSpeechProvider implements SpeechProvider{
     this.recognizer=null;
     this.audioConfig=null;
     this.sessionActive=false;
+    this.sessionGeneration+=1;
     this.seenFinalIds.clear();
 
     try{await recognizer?.close(()=>{},()=>{})}catch{}
