@@ -1,5 +1,5 @@
 "use client";
-import {useCallback,useEffect,useRef,useState} from "react";import {useSettings} from "@/components/AppShell";import {useSpeech} from "@/hooks/useSpeech";import {languages} from "@/lib/constants";import type {Language} from "@/lib/types";
+import {useCallback,useEffect,useRef,useState} from "react";import {useSettings} from "@/lib/settings-context";import {useSpeech} from "@/hooks/useSpeech";import {languages} from "@/lib/constants";import type {Language} from "@/lib/types";
 function LanguageSelect({value,onChange}:{value:Language;onChange:(v:Language)=>void}){return <label className="language"><span className="sr">Language</span><select value={value} onChange={e=>onChange(e.target.value as Language)}>{languages.map(x=><option key={x.value} value={x.value}>{x.icon} {x.label}</option>)}</select></label>}
 function mergeText(finalText:string,interim:string){return [finalText.trim(),interim.trim()].filter(Boolean).join(" ")}
 export function VoiceWorkspace(){
