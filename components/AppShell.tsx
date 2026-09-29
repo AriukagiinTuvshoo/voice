@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {useContext,useEffect,useMemo,useRef,useState,useCallback,type ReactNode} from "react";
+import type {ReactNode} from "react";
 import {languages,recordingModes,shortcuts,modes,themes} from "@/lib/constants";
 import type {Language,Settings,Shortcut} from "@/lib/types";
 import {VoiceWorkspace} from "@/components/recording/VoiceWorkspace";
@@ -9,7 +9,7 @@ import {VoiceWorkspace} from "@/components/recording/VoiceWorkspace";
 import {SettingsProvider,useSettings} from "@/lib/settings-context";
 const nav=[["/dashboard","＋","New"],["/history","◷","History"],["/settings","⚙","Settings"]];
 export function AppShell({children}:{children:ReactNode}){
- return <Provider><Shell>{children}</Shell></Provider>
+ return <SettingsProvider><Shell>{children}</Shell></SettingsProvider>
 }
 function Shell({children}:{children:ReactNode}){
  const path=usePathname();const {settings,update}=useSettings();
@@ -19,7 +19,9 @@ function Language({value,onChange}:{value:Language;onChange:(v:Language)=>void})
  return <label className="language"><span className="sr">Language</span><select value={value} onChange={e=>onChange(e.target.value as Language)}>{languages.map(x=><option key={x.value} value={x.value}>{x.icon} {x.label}</option>)}</select></label>
 }
 
-export const Workspace=VoiceWorkspace;\n\nexport function SettingsPanel(){
+export const Workspace=VoiceWorkspace;
+
+export function SettingsPanel(){
  const {settings,update}=useSettings();
  const Toggle=({k,label}:{k:keyof Settings;label:string})=><label className="toggle"><span>{label}</span><input type="checkbox" checked={Boolean(settings[k])} onChange={e=>update(k,e.target.checked as never)}/></label>;
  return <div className="settings-grid">
