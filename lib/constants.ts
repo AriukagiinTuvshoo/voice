@@ -1,0 +1,6 @@
+import type {Language,RecordingMode,ProcessingMode,Shortcut,Theme} from "./types";
+export const languages:{value:Language;label:string;icon:string}[]=[{value:"mn",label:"Монгол",icon:"🇲🇳"},{value:"en",label:"English",icon:"🇬🇧"},{value:"ja",label:"日本語",icon:"🇯🇵"},{value:"auto",label:"Auto Detect",icon:"🌐"}];
+export const recordingModes:{value:RecordingMode;label:string;description:string}[]=[{value:"toggle",label:"Toggle",description:"Нэг дарж эхлүүлээд дахин дарж зогсооно."},{value:"push_to_talk",label:"Push-to-talk",description:"Shortcut эсвэл товчийг дарсан үед бичнэ."},{value:"microphone",label:"Microphone button",description:"Микрофоны товчоор бичлэгийг удирдана."}];
+export const shortcuts:Shortcut[]=["Space","F2","F4","F8","Ctrl+Space","Alt+Space"];
+export const modes:{value:ProcessingMode;label:string;description:string}[]=[{value:"raw",label:"Raw",description:"Таньсан текстийг шууд харуулна."},{value:"standard",label:"Standard",description:"Цэг таслал болон үндсэн засвар хийнэ."},{value:"clean",label:"Clean",description:"Илүү цэвэр, уншихад хялбар болгоно."},{value:"polished",label:"Polished",description:"Найруулгыг илүү байгалийн болгоно."}];
+export const themes:{value:Theme;label:string}[]=[{value:"light",label:"Light"},{value:"dark",label:"Dark"},{value:"system",label:"System"}];
