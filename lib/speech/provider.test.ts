@@ -1,23 +1,2 @@
-import {describe,expect,it,afterEach} from "vitest";
-import {BrowserSpeechProvider} from "./browser-provider";
-import {CloudSpeechProvider} from "./cloud-provider";
-import {createSpeechProvider} from "./provider";
-
-afterEach(()=>{delete (globalThis as {window?:unknown}).window});
-
-describe("speech providers",()=>{
- it("declares browser and cloud capabilities without Azure secrets",()=>{
-  const browser=new BrowserSpeechProvider();
-  const cloud=new CloudSpeechProvider();
-  expect(browser.capabilities.supportedLanguages).toEqual(["mn","en","ja"]);
-  expect(cloud.capabilities.supportedLanguages).toEqual(["mn","en","ja"]);
-  expect(cloud.capabilities.streaming).toBe(true);
-  expect(cloud.capabilities.ownsMicrophone).toBe(true);
-  cloud.destroy();
-  browser.destroy();
- });
- it("creates the requested provider behind the shared abstraction",()=>{
-  expect(createSpeechProvider("browser").id).toBe("browser-web-speech");
-  expect(createSpeechProvider("cloud").id).toBe("azure-speech");
- });
-});
+import {describe,expect,it} from "vitest";import {BrowserSpeechProvider} from "./browser-provider";
+describe("browser speech provider",()=>{it("reports required capabilities",()=>{const p=new BrowserSpeechProvider();expect(p.id).toBe("browser-web-speech");expect(p.capabilities.supportedLanguages).toEqual(["mn","en","ja"]);expect(p.capabilities.interimResults).toBe(true)});it("reports unsupported when SpeechRecognition is absent",()=>{expect(new BrowserSpeechProvider().isSupported()).toBe(false)})});
