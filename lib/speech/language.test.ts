@@ -1,0 +1,2 @@
+import {describe,expect,it} from "vitest";import {speechLanguageMap,toProviderLanguage} from "./language";
+describe("speech language mapping",()=>{it("maps all supported languages to provider tags",()=>{expect(speechLanguageMap).toEqual({mn:"mn-MN",en:"en-US",ja:"ja-JP"});});it("does not invent a provider code for auto",()=>{expect(toProviderLanguage("auto")).toBeUndefined()})});
