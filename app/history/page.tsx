@@ -1,0 +1,1 @@
+export default function History(){return <section className="page"><small>VOICE HISTORY</small><h1>Түүх</h1><p>Өмнө хадгалсан бичлэг болон transcript-уудаа эндээс удирдана.</p><div className="empty-page"><div>◌</div><h2>Одоогоор бичлэг байхгүй.</h2><p>Бодит speech recognition холбогдсоны дараа хадгалсан transcript-ууд энд харагдана.</p></div></section>}
