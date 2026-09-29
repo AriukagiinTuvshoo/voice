@@ -12,7 +12,7 @@ declare global{interface Window{SpeechRecognition?:RecognitionConstructor;webkit
 
 export class BrowserSpeechProvider implements SpeechProvider{
  readonly id="browser-web-speech";
- readonly capabilities:SpeechProviderCapabilities={streaming:true,interimResults:true,finalResults:true,supportedLanguages:["mn","en","ja"],requiresMicrophonePermission:true};
+ readonly capabilities:SpeechProviderCapabilities={streaming:true,interimResults:true,finalResults:true,supportedLanguages:["mn","en","ja"],requiresMicrophonePermission:true,ownsMicrophone:true};
  private recognition:RecognitionLike|null=null;
  private interimListeners=new Set<(text:string)=>void>();
  private finalListeners=new Set<(text:string)=>void>();
@@ -26,6 +26,7 @@ export class BrowserSpeechProvider implements SpeechProvider{
   if(options.language==="auto")throw normalizeSpeechError({error:"language-not-supported"});
   const Constructor=window.SpeechRecognition??window.webkitSpeechRecognition;
   if(!Constructor)throw normalizeSpeechError({error:"unsupported"});
+  if(this.recognition)await this.abort();
   this.intentionalStop=false;
   const recognition=new Constructor();
   this.recognition=recognition;
@@ -57,4 +58,5 @@ export class BrowserSpeechProvider implements SpeechProvider{
  onFinalTranscript(callback:(text:string)=>void):()=>void{this.finalListeners.add(callback);return()=>this.finalListeners.delete(callback)}
  onError(callback:(error:SpeechError)=>void):()=>void{this.errorListeners.add(callback);return()=>this.errorListeners.delete(callback)}
  onStateChange(callback:(state:SpeechProviderState)=>void):()=>void{this.stateListeners.add(callback);return()=>this.stateListeners.delete(callback)}
+ destroy(){void this.abort();this.interimListeners.clear();this.finalListeners.clear();this.errorListeners.clear();this.stateListeners.clear()}
 }

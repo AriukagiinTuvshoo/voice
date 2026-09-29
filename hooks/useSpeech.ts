@@ -26,6 +26,7 @@ export function useSpeech(){
   const [error,setError]=useState<SpeechError|undefined>(undefined);
   const [supported,setSupported]=useState(false);
   const [capabilities,setCapabilities]=useState<ReturnType<VoiceSpeechService["getCapabilities"]>|undefined>(undefined);
+  const [providerId,setProviderId]=useState("");
   const sessionId=useRef(id());
   const startedAt=useRef<number|undefined>(undefined);
 
@@ -34,12 +35,13 @@ export function useSpeech(){
     service.current=s;
     setSupported(s.isSupported());
     setCapabilities(s.getCapabilities());
+    setProviderId(s.getCapabilities().ownsMicrophone?"":s.getCapabilities().supportedLanguages.join(","));
 
     const clean=[
       s.onInterimTranscript(setInterimText),
       s.onFinalTranscript((text:string)=>setFinalText(value=>(value+" "+text).replace(/\s+/g," ").trim())),
       s.onError((speechError:SpeechError)=>{setError(speechError);setState("error");}),
-      s.onStateChange((next)=>{if(next==="recording")setState("recording");if(next==="stopping")setState("stopping");if(next==="ended")setState("processing");})
+      s.onStateChange(next=>{if(next==="recording")setState("recording");if(next==="stopping")setState("stopping");if(next==="ended")setState("processing");})
     ];
 
     return ()=>{
@@ -71,7 +73,7 @@ export function useSpeech(){
     setState("stopping");
     try{
       await service.current.stop();
-      setState("processing");
+      setState("success");
     }catch(cause){
       const speechError=toSpeechError(cause);
       setError(speechError);
@@ -85,5 +87,5 @@ export function useSpeech(){
     setState("idle");
   },[]);
 
-  return {session:{id:sessionId.current,language,state,startedAt:startedAt.current,endedAt:state==="success"||state==="error"?Date.now():undefined,interimText,finalText,error},start,stop,abort,supported,capabilities};
+  return {session:{id:sessionId.current,language,state,startedAt:startedAt.current,endedAt:state==="success"||state==="error"?Date.now():undefined,interimText,finalText,error},start,stop,abort,supported,capabilities,providerId};
 }
