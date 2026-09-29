@@ -1,24 +1,12 @@
 "use client";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
-import {createContext,useContext,useEffect,useMemo,useRef,useState,useCallback,type ReactNode} from "react";
+import {useContext,useEffect,useMemo,useRef,useState,useCallback,type ReactNode} from "react";
 import {languages,recordingModes,shortcuts,modes,themes} from "@/lib/constants";
 import type {Language,Settings,Shortcut} from "@/lib/types";
 import {VoiceWorkspace} from "@/components/recording/VoiceWorkspace";
 
-const defaults:Settings={language:"mn",recordingMode:"toggle",shortcut:"Space",autoStop:false,autoPunctuation:true,autoCorrection:true,removeFillers:false,processingMode:"standard",theme:"system",saveRecordings:true,saveTranscripts:true};
-type Ctx={settings:Settings;update:<K extends keyof Settings>(k:K,v:Settings[K])=>void};
-const SettingsContext=createContext<Ctx|null>(null);
-export function useSettings(){const c=useContext(SettingsContext);if(!c)throw new Error("useSettings must be used inside AppShell");return c}
-
-function Provider({children}:{children:ReactNode}){
- const [settings,setSettings]=useState<Settings>(defaults);
- useEffect(()=>{try{const x=localStorage.getItem("voice-settings");if(x)setSettings({...defaults,...JSON.parse(x)})}catch{}},[]);
- useEffect(()=>{try{localStorage.setItem("voice-settings",JSON.stringify(settings))}catch{}},[settings]);
- useEffect(()=>{const root=document.documentElement;const apply=()=>{root.dataset.theme=settings.theme==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):settings.theme};apply();if(settings.theme!=="system")return;const m=matchMedia("(prefers-color-scheme: dark)");m.addEventListener("change",apply);return()=>m.removeEventListener("change",apply)},[settings.theme]);
- const value=useMemo(()=>({settings,update:<K extends keyof Settings>(k:K,v:Settings[K])=>setSettings(s=>({...s,[k]:v}))}),[settings]);
- return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
-}
+import {SettingsProvider,useSettings} from "@/lib/settings-context";
 const nav=[["/dashboard","＋","New"],["/history","◷","History"],["/settings","⚙","Settings"]];
 export function AppShell({children}:{children:ReactNode}){
  return <Provider><Shell>{children}</Shell></Provider>
