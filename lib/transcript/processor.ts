@@ -21,7 +21,7 @@ const FILLERS: Partial<Record<Exclude<Language, "auto">, string[]>> = {
 };
 
 const SAFE_CORRECTIONS: Partial<Record<Exclude<Language, "auto">, Record<string, string>>> = {
-  en: {im:"I'm", ive:"I've", id:"I'd", dont:"don't", cant:"can't", wont:"won't", youre:"you're", theyre:"they're", were:"we're", youve:"you've", doesnt:"doesn't", didnt:"didn't"},
+  en: {im:"I'm", ive:"I've", dont:"don't", cant:"can't", wont:"won't", youre:"you're", theyre:"they're", youve:"you've", doesnt:"doesn't", didnt:"didn't"},
 };
 
 function normalizeWhitespace(text:string):string{return text.replace(/\s+/g," ").trim();}
