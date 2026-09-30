@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {useEffect,useMemo,useState} from "react";
 import {getHistoryService} from "@/lib/history/service";
-import type {TranscriptSession} from "@/lib/history/types";
+import type {TranscriptSession} from "@/lib/history/types";\nimport {getDashboardStats} from "@/lib/dashboard/stats";
 
 function relativeDate(value:string){
   const date=new Date(value),diff=Date.now()-date.getTime(),day=86400000;
@@ -25,8 +25,8 @@ export default function Dashboard(){
   {error&&<div className="history-notice" role="alert">{error}</div>}
   <div className="stats-grid" aria-label="Local recording statistics">
    <div className="stat-card"><span>Total recordings</span><strong>{loading?"—":sessions.length}</strong></div>
-   <div className="stat-card"><span>This week</span><strong>{loading?"—":thisWeek}</strong></div>
-   <div className="stat-card"><span>Transcript time</span><strong>{loading?"—":`${Math.floor(secondsTotal(sessions)/60)}m`}</strong></div>
+   <div className="stat-card"><span>This week</span><strong>{loading?"—":stats.thisWeek}</strong></div>
+   <div className="stat-card"><span>Transcript time</span><strong>{loading?"—":`${Math.floor(stats.totalDurationMs/60000)}m`}</strong></div>
   </div>
   <div className="dashboard-section-head"><div><small>RECENT</small><h2>Recent sessions</h2></div><Link href="/history">View all</Link></div>
   {loading?<div className="dashboard-loading" aria-live="polite">Recent sessions ачаалж байна...</div>:recent.length===0?<div className="dashboard-empty"><div>◌</div><h2>No recordings yet</h2><p>Анхны transcript-ээ хадгалаад өдөр тутмын history-гээ эндээс үргэлжлүүл.</p><Link href="/recording" className="dashboard-primary">Start recording</Link></div>:<div className="recent-list">{recent.map(item=><Link key={item.id} href={`/history/${item.id}`} className="recent-item"><div><h3>{item.title}</h3><p>{item.processedText||"No transcript text"}</p></div><div className="recent-meta"><time dateTime={item.updatedAt}>{relativeDate(item.updatedAt)}</time><span>{item.language}</span></div></Link>)}</div>}
