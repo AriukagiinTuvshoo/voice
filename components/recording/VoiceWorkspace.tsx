@@ -23,6 +23,7 @@ export function VoiceWorkspace(){
   const [saving,setSaving]=useState(false);
   const [copyState,setCopyState]=useState<"idle"|"copied"|"failed">("idle");
   const [dirty,setDirty]=useState(false);
+  const [retrySave,setRetrySave]=useState(0);
   const savingRef=useRef(false);
   const push=useRef(false);
   const savedSessionId=useRef<string|null>(null);
@@ -103,9 +104,11 @@ export function VoiceWorkspace(){
       savingRef.current=false;
       setSaving(false);
     });
-  },[settings.saveTranscripts,speech.session]);
+  },[settings.saveTranscripts,speech.session,retrySave]);
 
   const mm=String(Math.floor(elapsed/60)).padStart(2,"0"),ss=String(elapsed%60).padStart(2,"0");
+  const unsupported=!speech.supported;
+  const error=speech.session.error;
   const uxState=getSessionUxState({speechState:speech.session.state,hasFinalText:Boolean(finalText),saving,saved,hasError:Boolean(error||saveError)});
   const label=uxState==="saving"?"ХАДГАЛЖ БАЙНА...":uxState==="saved"?"ХАДГАЛАГДСАН":uxState==="recording"?(speech.session.state==="stopping"?"ЗОГСООЖ БАЙНА...":"ЯРИЖ БАЙНА..."):uxState==="processing"?"БОЛОВСРУУЛЖ БАЙНА...":uxState==="error"?"ДАХИН ОРОЛДОХ":"ЯРЬЖ ЭХЛЭХ";
   const unsupported=!speech.supported;
@@ -120,7 +123,7 @@ export function VoiceWorkspace(){
       {unsupported&&<p className="engine">Энэ browser SpeechRecognition API-г дэмжихгүй байна. Дараагийн cloud provider-д зориулсан provider boundary бэлэн.</p>}
       {autoMessage&&<p className="engine">{autoMessage}</p>}
       {error&&<div className="error" role="alert">{error.message}<button onClick={start}>Дахин оролдох</button></div>}
-      {saveError&&<div className="history-notice" role="alert">{saveError}<button onClick={()=>{savedSessionId.current=null;setSaveError("");}}>Retry save</button></div>}
+      {saveError&&<div className="history-notice" role="alert">{saveError}<button onClick={()=>{savedSessionId.current=null;setSaveError("");setRetrySave(value=>value+1);}}>Retry save</button></div>}
       {saved&&<div className="history-notice" role="status">Transcript History-д хадгалагдлаа.</div>}
     </div>
     <section className="transcript" aria-live="polite">
