@@ -5,7 +5,8 @@ import {useSettings} from "@/lib/settings-context";
 import {useSpeech} from "@/hooks/useSpeech";
 import {getHistoryService} from "@/lib/history/service";
 import {languages} from "@/lib/constants";
-import type {Language} from "@/lib/types";\nimport {getSessionUxState} from "@/lib/session/ux";
+import type {Language} from "@/lib/types";
+import {getSessionUxState} from "@/lib/session/ux";
 
 function LanguageSelect({value,onChange}:{value:Language;onChange:(v:Language)=>void}){
   return <label className="language"><span className="sr">Language</span><select value={value} onChange={e=>onChange(e.target.value as Language)}>{languages.map(x=><option key={x.value} value={x.value}>{x.icon} {x.label}</option>)}</select></label>;
@@ -18,7 +19,11 @@ export function VoiceWorkspace(){
   const [editing,setEditing]=useState(false);
   const [draft,setDraft]=useState("");
   const [saveError,setSaveError]=useState("");
-  const [saved,setSaved]=useState(false);\n  const [saving,setSaving]=useState(false);\n  const [copyState,setCopyState]=useState<"idle"|"copied"|"failed">("idle");\n  const [dirty,setDirty]=useState(false);\n  const savingRef=useRef(false);
+  const [saved,setSaved]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [copyState,setCopyState]=useState<"idle"|"copied"|"failed">("idle");
+  const [dirty,setDirty]=useState(false);
+  const savingRef=useRef(false);
   const push=useRef(false);
   const savedSessionId=useRef<string|null>(null);
   const sessionProcessingMode=useRef(settings.processingMode);
@@ -65,9 +70,16 @@ export function VoiceWorkspace(){
   },[settings.shortcut,settings.recordingMode,start,activate,release]);
 
   const displayed=mergeText(speech.session.finalText,speech.session.interimText);
-  const finalText=speech.session.finalText;\n  const sessionText=editing?draft:finalText;
+  const finalText=speech.session.finalText;
+  const sessionText=editing?draft:finalText;
 
-  useEffect(()=>{if(!editing){setDraft(finalText);setDirty(false)}},[finalText,editing]);\n\n  useEffect(()=>{\n    const guard=(event:BeforeUnloadEvent)=>{if(dirty){event.preventDefault();event.returnValue=""}};\n    window.addEventListener("beforeunload",guard);\n    return()=>window.removeEventListener("beforeunload",guard);\n  },[dirty]);
+  useEffect(()=>{if(!editing){setDraft(finalText);setDirty(false)}},[finalText,editing]);
+
+  useEffect(()=>{
+    const guard=(event:BeforeUnloadEvent)=>{if(dirty){event.preventDefault();event.returnValue=""}};
+    window.addEventListener("beforeunload",guard);
+    return()=>window.removeEventListener("beforeunload",guard);
+  },[dirty]);
 
   useEffect(()=>{
     const session=speech.session;
@@ -121,6 +133,7 @@ export function VoiceWorkspace(){
       <button onClick={()=>{if(dirty&&!window.confirm("Unsaved changes will be lost. Continue?"))return;setDraft("");setEditing(false);setDirty(false);void speech.abort()}} disabled={!finalText&&!speech.session.interimText}>Clear</button>
     </footer>
     </section>
-    <div className="session-actions">{saved&&savedSessionId.current&&<a href={`/history/${savedSessionId.current}`}>Open transcript</a>}<a href="/history">View history</a><a href="/recording">New recording</a>{dirty&&<span aria-live="polite">Unsaved changes</span>}</div>\n    <div className="meta">Shortcut <kbd>{settings.shortcut}</kbd><span>Mode <b>{settings.recordingMode}</b></span><span>Provider <b>{speech.supported?"Available":"Unavailable"}</b></span></div>
+    <div className="session-actions">{saved&&savedSessionId.current&&<a href={`/history/${savedSessionId.current}`}>Open transcript</a>}<a href="/history">View history</a><a href="/recording">New recording</a>{dirty&&<span aria-live="polite">Unsaved changes</span>}</div>
+    <div className="meta">Shortcut <kbd>{settings.shortcut}</kbd><span>Mode <b>{settings.recordingMode}</b></span><span>Provider <b>{speech.supported?"Available":"Unavailable"}</b></span></div>
   </section>;
 }
