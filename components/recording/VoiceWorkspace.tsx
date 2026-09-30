@@ -80,7 +80,9 @@ export function VoiceWorkspace(){
       processedText:session.finalText,
       durationMs:session.startedAt?Date.now()-session.startedAt:undefined,
       source:"unknown",
-    }).then(()=>setSaved(true)).catch(()=>{\n      setSaveError("Transcript хадгалахад алдаа гарлаа. Одоогийн transcript устахгүй.");\n    });
+    }).then(()=>setSaved(true)).catch(()=>{
+      setSaveError("Transcript хадгалахад алдаа гарлаа. Одоогийн transcript устахгүй.");
+    });
   },[settings.processingMode,settings.saveTranscripts,speech.session]);
 
   const mm=String(Math.floor(elapsed/60)).padStart(2,"0"),ss=String(elapsed%60).padStart(2,"0");
