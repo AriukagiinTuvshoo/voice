@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback,useEffect,useRef,useState} from "react";
+import Link from "next/link";\nimport {useCallback,useEffect,useRef,useState} from "react";
 import {useSettings} from "@/lib/settings-context";
 import {useSpeech} from "@/hooks/useSpeech";
 import {getHistoryService} from "@/lib/history/service";
@@ -134,7 +134,7 @@ export function VoiceWorkspace(){
       <button onClick={()=>{if(dirty&&!window.confirm("Unsaved changes will be lost. Continue?"))return;setDraft("");setEditing(false);setDirty(false);void speech.abort()}} disabled={!finalText&&!speech.session.interimText}>Clear</button>
     </footer>
     </section>
-    <div className="session-actions">{saved&&savedSessionId.current&&<a href={`/history/${savedSessionId.current}`}>Open transcript</a>}<a href="/history">View history</a><a href="/recording">New recording</a>{dirty&&<span aria-live="polite">Unsaved changes</span>}</div>
+    <div className="session-actions">{saved&&savedSessionId.current&&<Link href={`/history/${savedSessionId.current}`}>Open transcript</Link>}<Link href="/history">View history</Link><Link href="/recording">New recording</Link>{dirty&&<span aria-live="polite">Unsaved changes</span>}</div>
     <div className="meta">Shortcut <kbd>{settings.shortcut}</kbd><span>Mode <b>{settings.recordingMode}</b></span><span>Provider <b>{speech.supported?"Available":"Unavailable"}</b></span></div>
   </section>;
 }
