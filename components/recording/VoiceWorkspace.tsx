@@ -20,7 +20,7 @@ export function VoiceWorkspace(){
   const [saveError,setSaveError]=useState("");
   const [saved,setSaved]=useState(false);
   const push=useRef(false);
-  const savedSessionId=useRef<string|null>(null);
+  const savedSessionId=useRef<string|null>(null);\n  const sessionProcessingMode=useRef(settings.processingMode);
   const timerStart=useRef<number|null>(null);
   const [elapsed,setElapsed]=useState(0);
   const recording=speech.session.state==="recording";
@@ -40,7 +40,7 @@ export function VoiceWorkspace(){
     return()=>{window.removeEventListener("blur",stop);document.removeEventListener("visibilitychange",onVisibility)};
   },[recording,stopSpeech]);
 
-  const start=useCallback(()=>{if(settings.language==="auto")return;setSaveError("");setSaved(false);void startSpeech(settings.language)},[settings.language,startSpeech]);
+  const start=useCallback(()=>{if(settings.language==="auto")return;sessionProcessingMode.current=settings.processingMode;setSaveError("");setSaved(false);void startSpeech(settings.language)},[settings.language,settings.processingMode,startSpeech]);
   const stop=useCallback(()=>void stopSpeech(),[stopSpeech]);
   const activate=useCallback((e?:React.PointerEvent)=>{
     if(settings.recordingMode==="push_to_talk"){e?.preventDefault();if(!recording){push.current=true;start()}}
@@ -75,7 +75,7 @@ export function VoiceWorkspace(){
     setSaveError("");
     void getHistoryService().createSession({
       language:session.language,
-      processingMode:settings.processingMode,
+      processingMode:sessionProcessingMode.current,
       rawText:session.rawFinalText,
       processedText:session.finalText,
       durationMs:session.startedAt?Date.now()-session.startedAt:undefined,
