@@ -12,7 +12,6 @@ function relativeDate(value:string){
   if(diff<7*day)return `${Math.floor(diff/day)}d ago`;
   try{return new Intl.DateTimeFormat(undefined,{month:"short",day:"numeric"}).format(date)}catch{return value}
 }
-function secondsTotal(items:TranscriptSession[]){return Math.round(items.reduce((sum,item)=>sum+(item.durationMs??0),0)/1000)}
 export default function Dashboard(){
  const [sessions,setSessions]=useState<TranscriptSession[]>([]);
  const [loading,setLoading]=useState(true);
