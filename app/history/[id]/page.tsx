@@ -20,7 +20,7 @@ export default function HistoryDetail(){
   const [text,setText]=useState("");
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
-  const [error,setError]=useState("");
+  const [error,setError]=useState("");\n  const [copyState,setCopyState]=useState<"idle"|"copied"|"failed">("idle");
 
   useEffect(()=>{
     let active=true;
@@ -56,14 +56,14 @@ export default function HistoryDetail(){
 
   return <section className="page">
     <div className="detail-top"><Link className="back-link" href="/history">← History</Link><button className="danger-action" onClick={()=>void remove()}>Delete</button></div>
-    <div className="detail-heading"><div><small>TRANSCRIPT</small><h1>Transcript detail</h1><p>{formatDate(session.createdAt)} · {session.language} · {session.processingMode}</p></div></div>
+    <div className="detail-heading"><div><small>TRANSCRIPT</small><h1>{title||"Untitled transcript"}</h1><p>Created {formatDate(session.createdAt)} · Updated {formatDate(session.updatedAt)} · {session.language} · {session.processingMode}{session.durationMs!==undefined?` · ${Math.round(session.durationMs/1000)}s`:""}</p></div></div>
     {error&&<div className="history-notice" role="alert">{error}</div>}
     <section className="detail-card">
       <label className="field-label" htmlFor="history-title">Title</label>
       <input id="history-title" className="detail-title-input" value={title} onChange={e=>setTitle(e.target.value)} maxLength={120}/>
       <label className="field-label" htmlFor="history-text">Processed transcript</label>
       <textarea id="history-text" className="detail-editor" value={text} onChange={e=>setText(e.target.value)} aria-describedby="raw-transcript-note"/>
-      <div className="detail-actions"><button onClick={()=>void copy()} disabled={!text}>Copy</button><button className="primary-action" onClick={()=>void save()} disabled={saving}>{saving?"Saving...":"Save changes"}</button></div>
+      <div className="detail-actions"><button onClick={async()=>{try{await navigator.clipboard?.writeText(text);setCopyState("copied");window.setTimeout(()=>setCopyState("idle"),1600)}catch{setCopyState("failed")}}} disabled={!text}>{copyState==="copied"?"Copied":copyState==="failed"?"Copy failed":"Copy"}</button><button className="primary-action" onClick={()=>void save()} disabled={saving}>{saving?"Saving...":"Save changes"}</button></div>
     </section>
     <details className="raw-panel"><summary>View original raw transcript</summary><p id="raw-transcript-note">{session.rawText||"No raw transcript text."}</p></details>
   </section>;
