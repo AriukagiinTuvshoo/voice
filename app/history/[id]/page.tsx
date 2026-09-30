@@ -20,7 +20,8 @@ export default function HistoryDetail(){
   const [text,setText]=useState("");
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
-  const [error,setError]=useState("");\n  const [copyState,setCopyState]=useState<"idle"|"copied"|"failed">("idle");
+  const [error,setError]=useState("");
+  const [copyState,setCopyState]=useState<"idle"|"copied"|"failed">("idle");
 
   useEffect(()=>{
     let active=true;
