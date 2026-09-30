@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";\nimport {useCallback,useEffect,useRef,useState} from "react";
+import Link from "next/link";
+import {useCallback,useEffect,useRef,useState} from "react";
 import {useSettings} from "@/lib/settings-context";
 import {useSpeech} from "@/hooks/useSpeech";
 import {getHistoryService} from "@/lib/history/service";
