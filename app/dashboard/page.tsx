@@ -3,7 +3,8 @@
 import Link from "next/link";
 import {useEffect,useMemo,useState} from "react";
 import {getHistoryService} from "@/lib/history/service";
-import type {TranscriptSession} from "@/lib/history/types";\nimport {getDashboardStats} from "@/lib/dashboard/stats";
+import type {TranscriptSession} from "@/lib/history/types";
+import {getDashboardStats} from "@/lib/dashboard/stats";
 
 function relativeDate(value:string){
   const date=new Date(value),diff=Date.now()-date.getTime(),day=86400000;
@@ -18,7 +19,7 @@ export default function Dashboard(){
  const [error,setError]=useState("");
  useEffect(()=>{let active=true;void getHistoryService().listSessions().then(items=>{if(active)setSessions(items)}).catch(()=>{if(active)setError("Recent sessions ачаалж чадсангүй.")}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[]);
  const recent=useMemo(()=>sessions.slice(0,5),[sessions]);
- const thisWeek=sessions.filter(item=>new Date(item.createdAt).getTime()>=Date.now()-7*86400000).length;
+ const stats=getDashboardStats(sessions);
  return <section className="page dashboard-page">
   <div className="dashboard-hero"><div><small>VOICE DASHBOARD</small><h1>Өнөөдөр юу ярих вэ?</h1><p>Шинэ recording эхлүүлээд finalized transcript-ээ шууд History-д хадгал.</p></div><Link href="/recording" className="dashboard-primary">＋ New recording</Link></div>
   {error&&<div className="history-notice" role="alert">{error}</div>}
