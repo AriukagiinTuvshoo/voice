@@ -107,12 +107,8 @@ export function VoiceWorkspace(){
   },[settings.saveTranscripts,speech.session,retrySave]);
 
   const mm=String(Math.floor(elapsed/60)).padStart(2,"0"),ss=String(elapsed%60).padStart(2,"0");
-  const unsupported=!speech.supported;
-  const error=speech.session.error;
   const uxState=getSessionUxState({speechState:speech.session.state,hasFinalText:Boolean(finalText),saving,saved,hasError:Boolean(error||saveError)});
   const label=uxState==="saving"?"ХАДГАЛЖ БАЙНА...":uxState==="saved"?"ХАДГАЛАГДСАН":uxState==="recording"?(speech.session.state==="stopping"?"ЗОГСООЖ БАЙНА...":"ЯРИЖ БАЙНА..."):uxState==="processing"?"БОЛОВСРУУЛЖ БАЙНА...":uxState==="error"?"ДАХИН ОРОЛДОХ":"ЯРЬЖ ЭХЛЭХ";
-  const unsupported=!speech.supported;
-  const error=speech.session.error;
   const autoMessage=settings.language==="auto"?"Auto Detect нь энэ browser provider дээр дэмжигдээгүй. Монгол, English эсвэл 日本語 сонгоно уу.":null;
 
   return <section className="workspace">
