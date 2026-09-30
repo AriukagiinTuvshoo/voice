@@ -191,3 +191,30 @@ Run:
 `git diff --check`
 
 Phase 6 CI must remain a real GitHub Actions verification run. Local `git diff --check` must be executed against the actual Phase 6 worktree before declaring the phase complete.
+
+
+## Phase 7 — Production Session UX & Dashboard Integration
+
+Phase 7 turns the Phase 5 speech/processing flow and Phase 6 local history into a daily-use workspace.
+
+### Dashboard
+- `/dashboard` is the home screen with a New recording CTA.
+- Recent sessions use the existing `HistoryService` and are ordered by the history repository's `updatedAt` ordering.
+- Local statistics show total recordings, recordings from the last seven days, and total saved transcript duration.
+- `/recording` is the dedicated recording workspace route.
+
+### Session lifecycle
+The recording UI communicates idle, recording, processing, ready, saving, saved, and error states. Finalized transcripts are persisted once per speech session when transcript saving is enabled. Save failures keep the current transcript available and provide retry feedback.
+
+The workspace supports editing the processed transcript after saving. Manual edits update only `processedText`; `rawText` remains unchanged. Unsaved editor changes are tracked and protected with a browser unload warning.
+
+### History integration
+Dashboard recent sessions and the full History page both use the Phase 6 history service/repository. History supports search, open, edit, copy, and intentional delete. The detail view shows created/updated timestamps, language, processing mode, and duration when available.
+
+### Local-first and privacy
+Phase 7 adds no authentication, cloud sync, analytics, AI, audio storage, or external transcript transport. Dashboard statistics and recent sessions are derived only from browser-local history.
+
+### Known limitations
+- Local history is limited to the current browser profile/device.
+- Physical microphone/provider behavior still requires browser/device verification.
+- In this execution environment, the real local Git worktree may be unavailable; GitHub Actions remains the authoritative remote CI verification.
