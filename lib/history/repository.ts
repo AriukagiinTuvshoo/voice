@@ -49,7 +49,7 @@ function browserStorage(): StorageLike | null {
 
 function sortSessions(sessions: TranscriptSession[]): TranscriptSession[] {
   return [...sessions].sort((a, b) => {
-    const time = b.createdAt.localeCompare(a.createdAt);
+    const time = b.updatedAt.localeCompare(a.updatedAt);
     return time !== 0 ? time : b.id.localeCompare(a.id);
   });
 }
