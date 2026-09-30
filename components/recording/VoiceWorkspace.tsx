@@ -20,7 +20,8 @@ export function VoiceWorkspace(){
   const [saveError,setSaveError]=useState("");
   const [saved,setSaved]=useState(false);
   const push=useRef(false);
-  const savedSessionId=useRef<string|null>(null);\n  const sessionProcessingMode=useRef(settings.processingMode);
+  const savedSessionId=useRef<string|null>(null);
+  const sessionProcessingMode=useRef(settings.processingMode);
   const timerStart=useRef<number|null>(null);
   const [elapsed,setElapsed]=useState(0);
   const recording=speech.session.state==="recording";
