@@ -18,7 +18,7 @@ export function VoiceWorkspace(){
   const [editing,setEditing]=useState(false);
   const [draft,setDraft]=useState("");
   const [saveError,setSaveError]=useState("");
-  const [saved,setSaved]=useState(false);
+  const [saved,setSaved]=useState(false);\n  const [saving,setSaving]=useState(false);\n  const [copyState,setCopyState]=useState<"idle"|"copied"|"failed">("idle");\n  const [dirty,setDirty]=useState(false);\n  const savingRef=useRef(false);
   const push=useRef(false);
   const savedSessionId=useRef<string|null>(null);
   const sessionProcessingMode=useRef(settings.processingMode);
@@ -65,15 +65,15 @@ export function VoiceWorkspace(){
   },[settings.shortcut,settings.recordingMode,start,activate,release]);
 
   const displayed=mergeText(speech.session.finalText,speech.session.interimText);
-  const finalText=speech.session.finalText;
+  const finalText=speech.session.finalText;\n  const sessionText=editing?draft:finalText;
 
-  useEffect(()=>{if(!editing)setDraft(finalText)},[finalText,editing]);
+  useEffect(()=>{if(!editing){setDraft(finalText);setDirty(false)}},[finalText,editing]);\n\n  useEffect(()=>{\n    const guard=(event:BeforeUnloadEvent)=>{if(dirty){event.preventDefault();event.returnValue=""}};\n    window.addEventListener("beforeunload",guard);\n    return()=>window.removeEventListener("beforeunload",guard);\n  },[dirty]);
 
   useEffect(()=>{
     const session=speech.session;
-    if(!settings.saveTranscripts||session.state!=="processing"||!session.finalText||savedSessionId.current===session.id)return;
-    savedSessionId.current=session.id;
-    setSaveError("");
+    if(!settings.saveTranscripts||session.state!=="processing"||!session.finalText||savedSessionId.current===session.id||savingRef.current)return;
+    savingRef.current=true;
+    setSaving(true);setSaved(false);setSaveError("");
     void getHistoryService().createSession({
       language:session.language,
       processingMode:sessionProcessingMode.current,
@@ -81,10 +81,17 @@ export function VoiceWorkspace(){
       processedText:session.finalText,
       durationMs:session.startedAt?Date.now()-session.startedAt:undefined,
       source:"unknown",
-    }).then(()=>setSaved(true)).catch(()=>{
-      setSaveError("Transcript хадгалахад алдаа гарлаа. Одоогийн transcript устахгүй.");
+    }).then(savedSession=>{
+      savedSessionId.current=savedSession.id;
+      setSaved(true);
+      setDirty(false);
+    }).catch(()=>{
+      setSaveError("Transcript хадгалахад алдаа гарлаа. Одоогийн transcript устахгүй. Дахин хадгалж болно.");
+    }).finally(()=>{
+      savingRef.current=false;
+      setSaving(false);
     });
-  },[settings.processingMode,settings.saveTranscripts,speech.session]);
+  },[settings.saveTranscripts,speech.session]);
 
   const mm=String(Math.floor(elapsed/60)).padStart(2,"0"),ss=String(elapsed%60).padStart(2,"0");
   const label=speech.session.state==="requesting_permission"?"МИКРОФОНЫГ ЗӨВШӨӨРӨЖ БАЙНА...":recording?"ЯРИЖ БАЙНА...":speech.session.state==="stopping"?"ЗОГСООЖ БАЙНА...":speech.session.state==="processing"?"БОЛОВСРУУЛЖ БАЙНА...":speech.session.state==="error"?"ДАХИН ОРОЛДОХ":"ЯРЬЖ ЭХЛЭХ";
@@ -96,18 +103,23 @@ export function VoiceWorkspace(){
     <div className="heading"><div><small>VOICE WORKSPACE</small><h1>Ярихыг текст болго.</h1><p>Бодит микрофон болон browser speech recognition ашиглана.</p></div><LanguageSelect value={settings.language} onChange={v=>update("language",v)}/></div>
     <div className="stage">
       <div className={recording?"halo pulse":"halo"}><button className={recording?"mic recording":"mic"} onPointerDown={activate} onPointerUp={release} onPointerCancel={release} disabled={speech.session.state==="requesting_permission"||speech.session.state==="stopping"||speech.session.state==="processing"} aria-label={label} aria-pressed={recording}><span>●</span></button></div>
-      <strong>{label}</strong>{recording&&<time>{mm}:{ss}</time>}
+      <strong aria-live="polite">{saving?"ХАДГАЛЖ БАЙНА...":saved?"ХАДГАЛАГДСАН":label}</strong>{recording&&<time>{mm}:{ss}</time>}
       {unsupported&&<p className="engine">Энэ browser SpeechRecognition API-г дэмжихгүй байна. Дараагийн cloud provider-д зориулсан provider boundary бэлэн.</p>}
       {autoMessage&&<p className="engine">{autoMessage}</p>}
       {error&&<div className="error" role="alert">{error.message}<button onClick={start}>Дахин оролдох</button></div>}
-      {saveError&&<div className="history-notice" role="alert">{saveError}</div>}
+      {saveError&&<div className="history-notice" role="alert">{saveError}<button onClick={()=>{savedSessionId.current=null;setSaveError("");}}>Retry save</button></div>}
       {saved&&<div className="history-notice" role="status">Transcript History-д хадгалагдлаа.</div>}
     </div>
     <section className="transcript" aria-live="polite">
       <header><b>Transcript</b><span>{speech.session.interimText?"Interim":"Final"}</span></header>
-      <div className="transcript-body">{speech.session.state==="processing"?<div className="empty">Transcript-ийг дуусгаж байна...</div>:editing?<textarea aria-label="Edit transcript" autoFocus value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Transcript энд харагдана."/>:displayed?<p className="transcript-text">{speech.session.finalText}<span className="interim">{speech.session.interimText}</span></p>:<div className="empty"><b>Таны текст энд гарна.</b><small>Ярьж эхлэхэд interim transcript, дараа нь final transcript бодитоор орж ирнэ.</small></div>}</div>
-      <footer><button onClick={()=>{setDraft(finalText);setEditing(true)}} disabled={!finalText}>Edit</button><button onClick={()=>{const text=editing?draft:finalText;if(text)void navigator.clipboard?.writeText(text)}} disabled={!finalText&&!draft}>Copy</button><button onClick={()=>{if(editing){setEditing(false)}}} disabled={!editing}>Save</button><button onClick={()=>{setDraft("");setEditing(false);void speech.abort()}} disabled={!finalText&&!speech.session.interimText}>Delete</button></footer>
+      <div className="transcript-body">{speech.session.state==="processing"?<div className="empty">Transcript-ийг дуусгаж байна...</div>:editing?<textarea aria-label="Edit transcript" autoFocus value={draft} onChange={e=>{setDraft(e.target.value);setDirty(true)}} placeholder="Transcript энд харагдана."/>:displayed?<p className="transcript-text">{speech.session.finalText}<span className="interim">{speech.session.interimText}</span></p>:<div className="empty"><b>Таны текст энд гарна.</b><small>Ярьж эхлэхэд interim transcript, дараа нь final transcript бодитоор орж ирнэ.</small></div>}</div>
+      <footer>
+      <button onClick={()=>{setDraft(finalText);setEditing(true);setDirty(false)}} disabled={!finalText||saving}>Edit</button>
+      <button onClick={async()=>{if(!sessionText)return;try{await navigator.clipboard?.writeText(sessionText);setCopyState("copied");window.setTimeout(()=>setCopyState("idle"),1600)}catch{setCopyState("failed")}}} disabled={!sessionText||saving}>{copyState==="copied"?"Copied":copyState==="failed"?"Copy failed":"Copy"}</button>
+      <button onClick={async()=>{if(!editing)return;const id=savedSessionId.current;if(!id){setEditing(false);setDirty(false);return}setSaving(true);setSaveError("");try{await getHistoryService().updateSession(id,{processedText:draft});setEditing(false);setDirty(false);setSaved(true)}catch{setSaveError("Өөрчлөлтийг хадгалж чадсангүй.")}finally{setSaving(false)}}} disabled={!editing||saving}>{saving?"Saving…":"Save"}</button>
+      <button onClick={()=>{if(dirty&&!window.confirm("Unsaved changes will be lost. Continue?"))return;setDraft("");setEditing(false);setDirty(false);void speech.abort()}} disabled={!finalText&&!speech.session.interimText}>Clear</button>
+    </footer>
     </section>
-    <div className="meta">Shortcut <kbd>{settings.shortcut}</kbd><span>Mode <b>{settings.recordingMode}</b></span><span>Provider <b>{speech.supported?"Available":"Unavailable"}</b></span></div>
+    <div className="session-actions">{saved&&savedSessionId.current&&<a href={`/history/${savedSessionId.current}`}>Open transcript</a>}<a href="/history">View history</a><a href="/recording">New recording</a>{dirty&&<span aria-live="polite">Unsaved changes</span>}</div>\n    <div className="meta">Shortcut <kbd>{settings.shortcut}</kbd><span>Mode <b>{settings.recordingMode}</b></span><span>Provider <b>{speech.supported?"Available":"Unavailable"}</b></span></div>
   </section>;
 }
