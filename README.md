@@ -141,3 +141,53 @@ Phase 5 processing is local and side-effect free. Transcript text is not sent to
 The correction dictionary is intentionally small and explicit. Currently only a narrow set of safe English contractions is corrected; Mongolian and Japanese are left unchanged when no trusted deterministic correction rule exists. The filler dictionaries are deliberately conservative to avoid removing meaningful words. `auto` does not infer a language.
 
 **AI rewriting is explicitly not part of Phase 5.** Authentication, database/history persistence, billing, translation, summarization, remote processing, and external AI providers remain out of scope.
+
+
+## Phase 6 — Production History & Persistence Foundation
+
+Phase 6 adds a local-first transcript history foundation without authentication or a cloud database.
+
+Architecture:
+
+`SpeechProvider → useSpeech → processTranscript() → VoiceWorkspace → HistoryService → TranscriptRepository → LocalTranscriptRepository`
+
+The history domain stores finalized sessions only. Each session preserves `rawText` separately from editable `processedText`, together with language, processing mode, timestamps, title, duration when available, and a non-secret source marker. Interim transcript events and microphone audio are never persisted.
+
+### Persistence behavior
+
+- Browser `localStorage` is the Phase 6 persistence backend.
+- Stored data uses a versioned envelope (`version: 1`) so future migrations have a defined boundary.
+- Malformed entries are ignored safely; unknown schema versions are not interpreted.
+- History is limited to 100 sessions. New saves are rejected at the limit instead of silently deleting existing user data.
+- Storage and quota failures are surfaced to the UI without clearing the current transcript.
+- No transcript data is sent to a remote service, analytics system, AI provider, or database.
+
+### History behavior
+
+`/history` supports deterministic client-side search across title, processed text, and raw text. Sessions can be opened, copied, edited, and intentionally deleted. Editing changes only `processedText` and the title; `rawText` remains unchanged. Titles are generated deterministically from the first meaningful words and can be edited manually.
+
+The existing `saveTranscripts` setting controls whether finalized sessions are persisted. The recording flow saves once after the finalized transcript reaches the processing state; interim events are never written to storage.
+
+### Privacy and security
+
+Phase 6 does not add authentication, cloud synchronization, audio upload, credentials, tokens, or transcript telemetry. Azure credentials remain server-only and are not written to history storage. Local history is browser-local and can be removed through the History UI.
+
+### Known limitations
+
+- History is local to the current browser profile and device; there is no cross-device synchronization.
+- There is no account ownership enforcement yet. The optional domain `ownerId` field exists only as a future-compatible model boundary and is not populated in Phase 6.
+- Physical microphone behavior still requires manual browser/device verification.
+
+### Phase 6 verification
+
+Run:
+
+`npm ci`
+`npm audit || true`
+`npm run typecheck`
+`npm run lint`
+`npm test`
+`npm run build`
+`git diff --check`
+
+Phase 6 CI must remain a real GitHub Actions verification run. Local `git diff --check` must be executed against the actual Phase 6 worktree before declaring the phase complete.
