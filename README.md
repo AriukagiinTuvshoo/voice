@@ -113,3 +113,31 @@ GitHub Actions is verification-only. The CI workflow uses `contents: read` and c
 Included: Azure Speech provider, token boundary, real-time interim/final recognition, language mapping, lifecycle cleanup, token refresh, provider selection, tests, docs.
 
 Not included: AI rewriting, translation, summarization, billing, authentication, team collaboration, system-wide dictation, Phase 5.
+
+
+## Phase 5 — Production Transcript Processing
+
+Phase 5 adds a local, deterministic transcript processing layer after finalized speech results and before the workspace consumes the final transcript.
+
+Architecture:
+
+`SpeechProvider → raw final transcript → processTranscript() → processed transcript → VoiceWorkspace`
+
+Processing modes:
+
+- **raw** — preserves recognized final text without linguistic transformation.
+- **standard** — deterministic whitespace/punctuation normalization and only explicit safe corrections when enabled.
+- **clean** — standard processing plus a small language-aware filler dictionary and conservative adjacent repeated-word cleanup when enabled.
+- **polished** — clean deterministic formatting only; it does not use AI, paraphrasing, summarization, translation, or content generation.
+
+Supported processing languages are `mn`, `en`, `ja`, and `auto`. The processor does not perform language detection. `auto` uses only language-neutral deterministic processing.
+
+The existing `processingMode`, `autoPunctuation`, `autoCorrection`, and `removeFillers` settings are used directly; no second settings store is introduced. Raw finalized text is retained separately from processed text in the speech session.
+
+Phase 5 processing is local and side-effect free. Transcript text is not sent to a remote service, logged, stored, or passed to an AI provider. No new secrets or environment variables are introduced.
+
+### Phase 5 limitations
+
+The correction dictionary is intentionally small and explicit. Currently only a narrow set of safe English contractions is corrected; Mongolian and Japanese are left unchanged when no trusted deterministic correction rule exists. The filler dictionaries are deliberately conservative to avoid removing meaningful words. `auto` does not infer a language.
+
+**AI rewriting is explicitly not part of Phase 5.** Authentication, database/history persistence, billing, translation, summarization, remote processing, and external AI providers remain out of scope.

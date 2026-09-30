@@ -3,7 +3,7 @@ import {useCallback,useEffect,useRef,useState} from "react";import {useSettings}
 function LanguageSelect({value,onChange}:{value:Language;onChange:(v:Language)=>void}){return <label className="language"><span className="sr">Language</span><select value={value} onChange={e=>onChange(e.target.value as Language)}>{languages.map(x=><option key={x.value} value={x.value}>{x.icon} {x.label}</option>)}</select></label>}
 function mergeText(finalText:string,interim:string){return [finalText.trim(),interim.trim()].filter(Boolean).join(" ")}
 export function VoiceWorkspace(){
- const {settings,update}=useSettings();const speech=useSpeech();const {start:startSpeech,stop:stopSpeech}=speech;const [editing,setEditing]=useState(false);const [draft,setDraft]=useState("");
+ const {settings,update}=useSettings();const speech=useSpeech({mode:settings.processingMode,autoPunctuation:settings.autoPunctuation,autoCorrection:settings.autoCorrection,removeFillers:settings.removeFillers});const {start:startSpeech,stop:stopSpeech}=speech;const [editing,setEditing]=useState(false);const [draft,setDraft]=useState("");
  const push=useRef(false);const timerStart=useRef<number|null>(null);const [elapsed,setElapsed]=useState(0);
  const recording=speech.session.state==="recording";
  useEffect(()=>{if(!recording){timerStart.current=null;setElapsed(0);return}timerStart.current=Date.now();const id=window.setInterval(()=>setElapsed(Math.floor((Date.now()-(timerStart.current||Date.now()))/1000)),250);return()=>window.clearInterval(id)},[recording]);
