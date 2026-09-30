@@ -7,7 +7,7 @@ import type {Language,Settings,Shortcut} from "@/lib/types";
 import {VoiceWorkspace} from "@/components/recording/VoiceWorkspace";
 
 import {SettingsProvider,useSettings} from "@/lib/settings-context";
-const nav=[["/dashboard","＋","New"],["/history","◷","History"],["/settings","⚙","Settings"]];
+const nav=[["/dashboard","⌂","Dashboard"],["/history","◷","History"],["/settings","⚙","Settings"]];
 export function AppShell({children}:{children:ReactNode}){
  return <SettingsProvider><Shell>{children}</Shell></SettingsProvider>
 }
