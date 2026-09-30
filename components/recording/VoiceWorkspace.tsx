@@ -5,7 +5,7 @@ import {useSettings} from "@/lib/settings-context";
 import {useSpeech} from "@/hooks/useSpeech";
 import {getHistoryService} from "@/lib/history/service";
 import {languages} from "@/lib/constants";
-import type {Language} from "@/lib/types";
+import type {Language} from "@/lib/types";\nimport {getSessionUxState} from "@/lib/session/ux";
 
 function LanguageSelect({value,onChange}:{value:Language;onChange:(v:Language)=>void}){
   return <label className="language"><span className="sr">Language</span><select value={value} onChange={e=>onChange(e.target.value as Language)}>{languages.map(x=><option key={x.value} value={x.value}>{x.icon} {x.label}</option>)}</select></label>;
@@ -94,7 +94,8 @@ export function VoiceWorkspace(){
   },[settings.saveTranscripts,speech.session]);
 
   const mm=String(Math.floor(elapsed/60)).padStart(2,"0"),ss=String(elapsed%60).padStart(2,"0");
-  const label=speech.session.state==="requesting_permission"?"МИКРОФОНЫГ ЗӨВШӨӨРӨЖ БАЙНА...":recording?"ЯРИЖ БАЙНА...":speech.session.state==="stopping"?"ЗОГСООЖ БАЙНА...":speech.session.state==="processing"?"БОЛОВСРУУЛЖ БАЙНА...":speech.session.state==="error"?"ДАХИН ОРОЛДОХ":"ЯРЬЖ ЭХЛЭХ";
+  const uxState=getSessionUxState({speechState:speech.session.state,hasFinalText:Boolean(finalText),saving,saved,hasError:Boolean(error||saveError)});
+  const label=uxState==="saving"?"ХАДГАЛЖ БАЙНА...":uxState==="saved"?"ХАДГАЛАГДСАН":uxState==="recording"?(speech.session.state==="stopping"?"ЗОГСООЖ БАЙНА...":"ЯРИЖ БАЙНА..."):uxState==="processing"?"БОЛОВСРУУЛЖ БАЙНА...":uxState==="error"?"ДАХИН ОРОЛДОХ":"ЯРЬЖ ЭХЛЭХ";
   const unsupported=!speech.supported;
   const error=speech.session.error;
   const autoMessage=settings.language==="auto"?"Auto Detect нь энэ browser provider дээр дэмжигдээгүй. Монгол, English эсвэл 日本語 сонгоно уу.":null;
