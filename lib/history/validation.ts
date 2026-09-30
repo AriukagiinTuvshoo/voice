@@ -28,7 +28,7 @@ export function isTranscriptSession(value: unknown): value is TranscriptSession 
   if (typeof value.rawText !== "string" || typeof value.processedText !== "string") return false;
   if (!SOURCES.includes(value.source as (typeof SOURCES)[number])) return false;
   if (!isNonEmptyString(value.title)) return false;
-  if (value.durationMs !== undefined && (!Number.isFinite(value.durationMs) || value.durationMs < 0)) return false;
+  if (value.durationMs !== undefined && (typeof value.durationMs !== "number" || !Number.isFinite(value.durationMs) || value.durationMs < 0)) return false;
   if (value.ownerId !== undefined && typeof value.ownerId !== "string") return false;
   return true;
 }
