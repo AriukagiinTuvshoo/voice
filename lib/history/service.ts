@@ -1,5 +1,7 @@
 import type {Language, ProcessingMode} from "@/lib/types";
 import {LocalTranscriptRepository, type TranscriptRepository} from "./repository";
+import {getPersistenceMode} from "./persistence";
+import {SupabaseTranscriptRepository} from "./supabase-repository";
 import {generateTranscriptTitle} from "./title";
 import type {CreateTranscriptSessionInput, TranscriptSession, UpdateTranscriptSessionInput} from "./types";
 
@@ -40,10 +42,7 @@ export class HistoryService {
   async updateSession(id: string, input: UpdateTranscriptSessionInput, now = new Date()): Promise<TranscriptSession> {
     const current = await this.repository.getById(id);
     if (!current) throw new Error("Transcript session not found.");
-    return this.repository.update(id, {...input, ...(input.title === undefined && input.processedText === undefined ? {} : {})}).then(session => ({
-      ...session,
-      updatedAt: now.toISOString(),
-    })).then(session => this.repository.save(session));
+    return this.repository.update(id, {...input, updatedAt: now.toISOString()});
   }
 
   deleteSession(id: string): Promise<void> {
@@ -58,7 +57,12 @@ export class HistoryService {
 let defaultService: HistoryService | undefined;
 
 export function getHistoryService(): HistoryService {
-  defaultService ??= new HistoryService(new LocalTranscriptRepository());
+  if (!defaultService) {
+    const repository = getPersistenceMode() === "cloud"
+      ? new SupabaseTranscriptRepository()
+      : new LocalTranscriptRepository();
+    defaultService = new HistoryService(repository);
+  }
   return defaultService;
 }
 

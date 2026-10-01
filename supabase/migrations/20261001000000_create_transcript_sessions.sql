@@ -1,0 +1,11 @@
+create table if not exists public.transcript_sessions (id text primary key,owner_id uuid null references auth.users(id) on delete cascade,created_at timestamptz not null,updated_at timestamptz not null,language text not null check (language in ('mn','en','ja','auto')),processing_mode text not null check (processing_mode in ('raw','standard','clean','polished')),raw_text text not null,processed_text text not null,duration integer null check (duration is null or duration >= 0),source text not null check (source in ('browser','cloud','unknown')),title text not null check (char_length(title) between 1 and 200),constraint transcript_sessions_timestamps_check check (updated_at >= created_at),constraint transcript_sessions_id_length_check check (char_length(id) between 1 and 200));
+create index if not exists transcript_sessions_owner_id_idx on public.transcript_sessions(owner_id);
+create index if not exists transcript_sessions_updated_at_idx on public.transcript_sessions(updated_at desc,id desc);
+create index if not exists transcript_sessions_created_at_idx on public.transcript_sessions(created_at desc);
+alter table public.transcript_sessions enable row level security;
+revoke all on table public.transcript_sessions from anon,authenticated;
+grant select,insert,update,delete on table public.transcript_sessions to authenticated;
+create policy "transcript_sessions_select_own" on public.transcript_sessions for select to authenticated using ((select auth.uid()) is not null and (select auth.uid())=owner_id);
+create policy "transcript_sessions_insert_own" on public.transcript_sessions for insert to authenticated with check ((select auth.uid()) is not null and (select auth.uid())=owner_id);
+create policy "transcript_sessions_update_own" on public.transcript_sessions for update to authenticated using ((select auth.uid()) is not null and (select auth.uid())=owner_id) with check ((select auth.uid()) is not null and (select auth.uid())=owner_id);
+create policy "transcript_sessions_delete_own" on public.transcript_sessions for delete to authenticated using ((select auth.uid()) is not null and (select auth.uid())=owner_id);

@@ -134,6 +134,7 @@ export class LocalTranscriptRepository implements TranscriptRepository {
       ...current,
       ...(input.title !== undefined ? {title: input.title.trim() || "Untitled transcript"} : {}),
       ...(input.processedText !== undefined ? {processedText: input.processedText} : {}),
+      ...(input.updatedAt !== undefined ? {updatedAt: input.updatedAt} : {}),
     };
 
     if (!isTranscriptSession(updated)) throw new HistoryRepositoryError("Invalid transcript update.");

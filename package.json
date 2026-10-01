@@ -14,7 +14,8 @@
     "microsoft-cognitiveservices-speech-sdk": "1.51.0",
     "next": "15.5.26",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "@supabase/supabase-js": "2.109.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.2.0",

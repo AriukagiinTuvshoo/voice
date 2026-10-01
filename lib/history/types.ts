@@ -34,4 +34,5 @@ export interface CreateTranscriptSessionInput {
 export interface UpdateTranscriptSessionInput {
   title?: string;
   processedText?: string;
+  updatedAt?: string;
 }

@@ -1,4 +1,5 @@
-name: VOICE CI
+name: CI
+
 on:
   push:
     branches: ["**"]
@@ -16,7 +17,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      # Phase 5 keeps the same reproducible CI gate as the speech phases.
       - run: npm ci
       - run: npm audit || true
       - run: npm run typecheck
