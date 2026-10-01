@@ -25,11 +25,17 @@ export class SupabaseTranscriptRepository implements TranscriptRepository {
     }
   }
 
+  private async getByIdForUser(id:string) {
+    const {data,error} = await this.getClient().from(TABLE).select("*").eq("id",id).maybeSingle();
+    if (error) throw error;
+    return data ? fromSupabaseRow(data) : null;
+  }
+
   async save(session:TranscriptSession) {
     if (!isTranscriptSession(session)) throw new PersistenceError("validation_error","Invalid transcript session.");
     try {
       const ownerId = await this.requireUserId();
-      const current = await this.getById(session.id);
+      const current = await this.getByIdForUser(session.id);
       if (current && session.updatedAt < current.updatedAt) throw new PersistenceError("conflict_error","A newer cloud transcript already exists.");
       const ownedSession = {...session, ownerId};
       const {data,error} = await this.getClient().from(TABLE).upsert(toSupabaseRow(ownedSession),{onConflict:"id"}).select("*").single();
@@ -73,7 +79,9 @@ export class SupabaseTranscriptRepository implements TranscriptRepository {
   }
 
   async update(id:string,input:UpdateTranscriptSessionInput) {
-    const current = await this.getById(id);
+    const ownerId = await this.requireUserId();
+    let current:TranscriptSession|null;
+    try { current = await this.getByIdForUser(id); } catch (error) { throw normalizePersistenceError(error); }
     if (!current) throw new PersistenceError("not_found","Transcript session not found.");
     const updated:TranscriptSession = {
       ...current,
@@ -84,7 +92,7 @@ export class SupabaseTranscriptRepository implements TranscriptRepository {
     if (!isTranscriptSession(updated)) throw new PersistenceError("validation_error","Invalid transcript update.");
     if (updated.updatedAt < current.updatedAt) throw new PersistenceError("conflict_error","A newer cloud transcript already exists.");
     try {
-      await this.requireUserId();
+      void ownerId;
       const {data,error} = await this.getClient().from(TABLE).update({
         created_at:updated.createdAt,
         updated_at:updated.updatedAt,
