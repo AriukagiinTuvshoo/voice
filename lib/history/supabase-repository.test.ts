@@ -1,1 +1,29 @@
-import{describe,expect,it,vi}from"vitest";import{SupabaseTranscriptRepository}from"./supabase-repository";const s={id:"session-1",createdAt:"2026-09-30T01:00:00.000Z",updatedAt:"2026-09-30T01:00:00.000Z",language:"mn" as const,processingMode:"clean" as const,rawText:"raw",processedText:"processed",durationMs:1000,source:"cloud" as const,title:"processed",ownerId:"11111111-1111-1111-1111-111111111111"};function client(result:unknown){const q={upsert:vi.fn(()=>q),update:vi.fn(()=>q),delete:vi.fn(()=>q),select:vi.fn(()=>q),eq:vi.fn(()=>q),maybeSingle:vi.fn(async()=>result),single:vi.fn(async()=>result),order:vi.fn(()=>q),neq:vi.fn(async()=>result)};return{from:vi.fn(()=>q)} as never}describe("Supabase repository",()=>{it("saves",async()=>{const r=new SupabaseTranscriptRepository(client({data:{id:s.id,owner_id:s.ownerId,created_at:s.createdAt,updated_at:s.updatedAt,language:s.language,processing_mode:s.processingMode,raw_text:s.rawText,processed_text:s.processedText,duration:s.durationMs,source:s.source,title:s.title},error:null}));vi.spyOn(r,"getById").mockResolvedValue(null);await expect(r.save(s)).resolves.toEqual(s)});it("normalizes permission",async()=>{const r=new SupabaseTranscriptRepository(client({data:null,error:{code:"42501",status:403}}));vi.spyOn(r,"getById").mockResolvedValue(null);await expect(r.save(s)).rejects.toMatchObject({code:"permission_error"})});it("rejects stale saves",async()=>{const r=new SupabaseTranscriptRepository(client({data:null,error:null}));vi.spyOn(r,"getById").mockResolvedValue({...s,updatedAt:"2026-10-01T01:00:00.000Z"});await expect(r.save(s)).rejects.toMatchObject({code:"conflict_error"})});it("reports update not-found",async()=>{const r=new SupabaseTranscriptRepository(client({data:null,error:null}));vi.spyOn(r,"getById").mockResolvedValue(null);await expect(r.update("missing",{processedText:"x"})).rejects.toMatchObject({code:"not_found"})});});
+import {describe,expect,it,vi} from "vitest";
+import {SupabaseTranscriptRepository} from "./supabase-repository";
+
+const s={id:"session-1",createdAt:"2026-09-30T01:00:00.000Z",updatedAt:"2026-09-30T01:00:00.000Z",language:"mn" as const,processingMode:"clean" as const,rawText:"raw",processedText:"processed",durationMs:1000,source:"cloud" as const,title:"processed",ownerId:"11111111-1111-1111-1111-111111111111"};
+
+function client(result:unknown,userId:string|null=s.ownerId){
+ const q:any={upsert:vi.fn(()=>q),update:vi.fn(()=>q),delete:vi.fn(()=>q),select:vi.fn(()=>q),eq:vi.fn(()=>q),maybeSingle:vi.fn(async()=>result),single:vi.fn(async()=>result),order:vi.fn(()=>q),neq:vi.fn(async()=>result)};
+ return {auth:{getUser:vi.fn(async()=>({data:{user:userId?{id:userId,email:"test@example.com"}:null},error:null}))},from:vi.fn(()=>q)} as never;
+}
+
+describe("Supabase repository",()=>{
+ it("saves",async()=>{
+  const r=new SupabaseTranscriptRepository(client({data:{id:s.id,owner_id:s.ownerId,created_at:s.createdAt,updated_at:s.updatedAt,language:s.language,processing_mode:s.processingMode,raw_text:s.rawText,processed_text:s.processedText,duration:s.durationMs,source:s.source,title:s.title},error:null}));
+  await expect(r.save(s)).resolves.toEqual(s);
+ });
+ it("normalizes permission",async()=>{
+  const r=new SupabaseTranscriptRepository(client({data:null,error:{code:"42501",status:403}}));
+  await expect(r.save(s)).rejects.toMatchObject({code:"permission_error"});
+ });
+ it("rejects stale saves",async()=>{
+  const newer={...s,updatedAt:"2026-10-01T01:00:00.000Z"};
+  const r=new SupabaseTranscriptRepository(client({data:{id:newer.id,owner_id:newer.ownerId,created_at:newer.createdAt,updated_at:newer.updatedAt,language:newer.language,processing_mode:newer.processingMode,raw_text:newer.rawText,processed_text:newer.processedText,duration:newer.durationMs,source:newer.source,title:newer.title},error:null}));
+  await expect(r.save(s)).rejects.toMatchObject({code:"conflict_error"});
+ });
+ it("reports update not-found",async()=>{
+  const r=new SupabaseTranscriptRepository(client({data:null,error:null}));
+  await expect(r.update("missing",{processedText:"x"})).rejects.toMatchObject({code:"not_found"});
+ });
+});
