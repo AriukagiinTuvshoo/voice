@@ -1,5 +1,5 @@
 import type {AuthResponse, AuthChangeEvent, Session, SupabaseClient} from "@supabase/supabase-js";
-import {createSupabaseBrowserClient} from "@/lib/history/supabase";
+import {createSupabaseBrowserClient} from "../history/supabase";
 import {normalizeAuthError} from "./errors";
 import {AuthError, type AuthSession, type AuthUser} from "./types";
 
