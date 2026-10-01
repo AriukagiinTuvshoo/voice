@@ -31,6 +31,9 @@ export function VoiceWorkspace(){
   const [dirty,setDirty]=useState(false);
   const [retrySave,setRetrySave]=useState(0);
   const [authRequired,setAuthRequired]=useState(false);
+  const [authEmail,setAuthEmail]=useState("");
+  const [authPassword,setAuthPassword]=useState("");
+  const [authBusy,setAuthBusy]=useState(false);
   const savingRef=useRef(false);
   const push=useRef(false);
   const savedSessionId=useRef<string|null>(null);
@@ -38,6 +41,7 @@ export function VoiceWorkspace(){
   const timerStart=useRef<number|null>(null);
   const [elapsed,setElapsed]=useState(0);
   const recording=speech.session.state==="recording";
+  const signInForSave=async(e:React.FormEvent)=>{e.preventDefault();setAuthBusy(true);setSaveError("");try{await auth.signIn(authEmail,authPassword);setAuthRequired(false);setRetrySave(value=>value+1)}catch(error){setSaveError(error instanceof Error?error.message:"Нэвтрэх үед алдаа гарлаа.")}finally{setAuthBusy(false)}};
 
   useEffect(()=>{
     if(!recording){timerStart.current=null;setElapsed(0);return}
@@ -133,7 +137,7 @@ export function VoiceWorkspace(){
       {unsupported&&<p className="engine">Энэ browser SpeechRecognition API-г дэмжихгүй байна. Дараагийн cloud provider-д зориулсан provider boundary бэлэн.</p>}
       {autoMessage&&<p className="engine">{autoMessage}</p>}
       {error&&<div className="error" role="alert">{error.message}<button onClick={start}>Дахин оролдох</button></div>}
-      {saveError&&<div className="history-notice" role="alert">{saveError}{authRequired&&cloud?<Link href="/login"> Sign in</Link>:<button onClick={()=>{savedSessionId.current=null;setSaveError("");setRetrySave(value=>value+1);}}>Retry save</button>}</div>}{cloud&&auth.status==="unauthenticated"&&<div className="history-notice" role="status">Cloud mode идэвхтэй байна. Save хийхийн тулд <Link href="/login">sign in</Link> хийнэ үү.</div>}{cloud&&auth.status==="loading"&&<div className="history-notice" role="status">Authentication session шалгаж байна...</div>}
+      {saveError&&<div className="history-notice" role="alert">{saveError}{authRequired&&cloud?<form className="inline-auth-form" onSubmit={signInForSave}><input aria-label="Email" type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="Email" autoComplete="email" required/><input aria-label="Password" type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="Password" autoComplete="current-password" required/><button disabled={authBusy}>{authBusy?"Signing in…":"Sign in & retry"}</button><Link href="/signup">Sign up</Link></form>:<button onClick={()=>{savedSessionId.current=null;setSaveError("");setRetrySave(value=>value+1);}}>Retry save</button>}</div>}{cloud&&auth.status==="unauthenticated"&&<div className="history-notice" role="status">Cloud mode идэвхтэй байна. Save хийхийн тулд <Link href="/login">sign in</Link> хийнэ үү.</div>}{cloud&&auth.status==="loading"&&<div className="history-notice" role="status">Authentication session шалгаж байна...</div>}
       {saved&&<div className="history-notice" role="status">Transcript History-д хадгалагдлаа.</div>}
     </div>
     <section className="transcript" aria-live="polite">
