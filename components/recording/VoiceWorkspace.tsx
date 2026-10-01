@@ -5,6 +5,9 @@ import {useCallback,useEffect,useRef,useState} from "react";
 import {useSettings} from "@/lib/settings-context";
 import {useSpeech} from "@/hooks/useSpeech";
 import {getHistoryService} from "@/lib/history/service";
+import {getPersistenceMode} from "@/lib/history/persistence";
+import {PersistenceError} from "@/lib/history/persistence-error";
+import {useAuth} from "@/lib/auth/context";
 import {languages} from "@/lib/constants";
 import type {Language} from "@/lib/types";
 import {getSessionUxState} from "@/lib/session/ux";
@@ -15,6 +18,8 @@ function LanguageSelect({value,onChange}:{value:Language;onChange:(v:Language)=>
 function mergeText(finalText:string,interim:string){return [finalText.trim(),interim.trim()].filter(Boolean).join(" ")}
 export function VoiceWorkspace(){
   const {settings,update}=useSettings();
+  const auth=useAuth();
+  const cloud=getPersistenceMode()==="cloud";
   const speech=useSpeech({mode:settings.processingMode,autoPunctuation:settings.autoPunctuation,autoCorrection:settings.autoCorrection,removeFillers:settings.removeFillers});
   const {start:startSpeech,stop:stopSpeech}=speech;
   const [editing,setEditing]=useState(false);
@@ -25,6 +30,7 @@ export function VoiceWorkspace(){
   const [copyState,setCopyState]=useState<"idle"|"copied"|"failed">("idle");
   const [dirty,setDirty]=useState(false);
   const [retrySave,setRetrySave]=useState(0);
+  const [authRequired,setAuthRequired]=useState(false);
   const savingRef=useRef(false);
   const push=useRef(false);
   const savedSessionId=useRef<string|null>(null);
@@ -87,7 +93,7 @@ export function VoiceWorkspace(){
     const session=speech.session;
     if(!settings.saveTranscripts||session.state!=="processing"||!session.finalText||savedSessionId.current===session.id||savingRef.current)return;
     savingRef.current=true;
-    setSaving(true);setSaved(false);setSaveError("");
+    setSaving(true);setSaved(false);setSaveError("");setAuthRequired(false);
     void getHistoryService().createSession({
       language:session.language,
       processingMode:sessionProcessingMode.current,
@@ -99,8 +105,13 @@ export function VoiceWorkspace(){
       savedSessionId.current=savedSession.id;
       setSaved(true);
       setDirty(false);
-    }).catch(()=>{
-      setSaveError("Transcript хадгалахад алдаа гарлаа. Одоогийн transcript устахгүй. Дахин хадгалж болно.");
+    }).catch((error)=>{
+      if(error instanceof PersistenceError && error.code==="permission_error") {
+        setAuthRequired(true);
+        setSaveError("Cloud history хадгалахад authenticated account шаардлагатай. Одоогийн transcript устахгүй.");
+      } else {
+        setSaveError("Transcript хадгалахад алдаа гарлаа. Одоогийн transcript устахгүй. Дахин хадгалж болно.");
+      }
     }).finally(()=>{
       savingRef.current=false;
       setSaving(false);
@@ -122,7 +133,7 @@ export function VoiceWorkspace(){
       {unsupported&&<p className="engine">Энэ browser SpeechRecognition API-г дэмжихгүй байна. Дараагийн cloud provider-д зориулсан provider boundary бэлэн.</p>}
       {autoMessage&&<p className="engine">{autoMessage}</p>}
       {error&&<div className="error" role="alert">{error.message}<button onClick={start}>Дахин оролдох</button></div>}
-      {saveError&&<div className="history-notice" role="alert">{saveError}<button onClick={()=>{savedSessionId.current=null;setSaveError("");setRetrySave(value=>value+1);}}>Retry save</button></div>}
+      {saveError&&<div className="history-notice" role="alert">{saveError}{authRequired&&cloud?<Link href="/login"> Sign in</Link>:<button onClick={()=>{savedSessionId.current=null;setSaveError("");setRetrySave(value=>value+1);}}>Retry save</button>}</div>}{cloud&&auth.status==="unauthenticated"&&<div className="history-notice" role="status">Cloud mode идэвхтэй байна. Save хийхийн тулд <Link href="/login">sign in</Link> хийнэ үү.</div>}{cloud&&auth.status==="loading"&&<div className="history-notice" role="status">Authentication session шалгаж байна...</div>}
       {saved&&<div className="history-notice" role="status">Transcript History-д хадгалагдлаа.</div>}
     </div>
     <section className="transcript" aria-live="polite">
