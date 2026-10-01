@@ -253,3 +253,50 @@ Persistence errors are normalized to `configuration_error`, `connection_error`, 
 No authentication, local-to-cloud migration, multi-device sync, realtime sync, billing, teams, sharing, AI rewriting, analytics, telemetry, audio storage, interim transcript persistence, or hidden synchronization is introduced.
 
 > Phase 8 establishes the production persistence foundation. Authentication and multi-device synchronization are future phases.
+
+
+## Phase 9 — Authentication & Ownership Foundation
+
+Phase 9 adds Supabase Auth on top of the Phase 8 persistence boundary. Authentication is centralized behind AuthService and AuthProvider; UI components do not call supabase.auth.* directly.
+
+### Authentication
+
+- Email/password sign-up and sign-in use Supabase Auth.
+- Sign-out is supported.
+- Initial session restoration and auth-state observation are handled centrally.
+- Auth state is explicit: loading, authenticated, unauthenticated, or error.
+- Auth failures are normalized into stable application errors without exposing provider internals.
+- Passwords are never stored by VOICE and never written to localStorage, sessionStorage, URLs, analytics, or application logs.
+
+### Ownership
+
+Cloud transcript ownership is derived from the authenticated Supabase user at the cloud repository boundary. The repository does not trust a caller-supplied ownerId as authority.
+
+The effective cloud flow is:
+
+`authenticated user → auth.uid() → transcript_sessions.owner_id → RLS`
+
+The Phase 8 RLS policies remain authoritative for SELECT, INSERT, UPDATE, and DELETE. UPDATE operations do not include owner_id in their application payload, and the database WITH CHECK policy prevents ownership mutation.
+
+### Local and cloud modes
+
+- `NEXT_PUBLIC_HISTORY_PERSISTENCE_MODE=local`: local history remains usable without authentication.
+- `NEXT_PUBLIC_HISTORY_PERSISTENCE_MODE=cloud`: protected history requires an authenticated Supabase session.
+- Cloud authorization failures never silently fall back to local persistence.
+- Recording and transcript processing can remain available before authentication; a cloud save failure preserves the current transcript and provides an authentication/retry path.
+
+### UI
+
+Added /login and /signup, account state in the app shell/settings, authenticated dashboard/history states, and cloud-save authentication handling in the recording workspace. Auth UI follows the existing VOICE design language and responsive/accessibility patterns.
+
+### Security and privacy
+
+- No Supabase service-role key is exposed to the browser.
+- Only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are used by the browser client.
+- No public transcript access is added.
+- No automatic local-history upload or migration is performed.
+- No audio, interim transcript, analytics, sharing, billing, Realtime, conflict resolution, or multi-device sync is added in Phase 9.
+
+### Phase 9 limitations
+
+Database ownership tests include a deterministic RLS contract test and repository-level ownership tests. A real two-user Supabase/PostgreSQL integration test is not claimed unless a deterministic local Supabase environment is available. Production credentials are not required by CI.
